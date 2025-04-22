@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="min-h-screen">
+  <div id="app"   class="min-h-screen font-sans bg-gradient-to-br from-blue-100 to-purple-200">
      <nav class="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-10">
         <div class="container mx-auto flex justify-between items-center">
             <RouterLink :to="{ name: 'home' }" class="text-2xl font-bold hover:text-indigo-200 transition-colors">

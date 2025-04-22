@@ -3,66 +3,124 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Form, FormQuestion, FormResponse, FormAnswers } from '@/types';
 
-// Helper for simple ID generation (replace with UUID in real app)
-const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+// Helpers ID (NO USAR EN PRODUCCIÓN)
+const generateFormId = () => `form-${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
+const generateQuestionId = () => `q-${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
+const generateResponseId = () => `resp-${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
 
 export const useFormStore = defineStore('form', () => {
+    // Estado
     const forms = ref<Form[]>([]);
-    const formResponses = ref<FormResponse[]>([]);
+    const formResponses = ref<FormResponse[]>([]); // Almacena todas las respuestas de todos los forms
 
+    // Getters
     const getFormById = computed(() => {
-        return (formId: string) => forms.value.find(f => f.id === formId);
+        return (formId: string): Form | undefined => forms.value.find(f => f.id === formId);
     });
 
     const getResponsesForForm = computed(() => {
-        return (formId: string) => formResponses.value.filter(r => r.formId === formId);
+        // Devuelve las respuestas para un ID de form específico, ordenadas por fecha descendente
+        return (formId: string): FormResponse[] => {
+            return formResponses.value
+                .filter(r => r.formId === formId)
+                .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime()); // Más reciente primero
+        }
     });
 
+    // Actions
     function addForm(title: string, questions: FormQuestion[]) {
-         if (!title || questions.length === 0) {
-            console.error("Form needs a title and at least one question.");
+        if (!title || !title.trim()) {
+             console.error("Form title cannot be empty.");
+             alert("Form title cannot be empty.");
             return null;
         }
+         if (!questions || questions.length === 0) {
+            console.error("Form must have at least one question.");
+            alert("Form must have at least one question.");
+            return null;
+        }
+         // Validar preguntas individuales (básico)
+         if (questions.some(q => !q.text || !q.text.trim())) {
+             console.error("All form questions must have text.");
+             alert("All form questions must have text.");
+             return null;
+         }
+         if (questions.some(q => q.type === 'radio' && (!q.options || q.options.length < 1 || q.options.some(opt => !opt || !opt.trim())))) {
+             console.error("Radio questions must have at least one non-empty option.");
+              alert("Radio questions must have at least one non-empty option.");
+             return null;
+         }
+
+
         const newForm: Form = {
-            id: generateId(),
+            id: generateFormId(),
             title: title.trim(),
-            // Ensure questions have IDs if they don't already
-            questions: questions.map(q => ({ ...q, id: q.id || generateId() })),
+            // Asegura que cada pregunta tenga un ID único si no lo tiene
+            questions: questions.map(q => ({
+                ...q,
+                id: q.id || generateQuestionId(), // Genera ID si falta
+                // Limpia opciones de radio si no es tipo radio
+                options: q.type === 'radio' ? (q.options || []).map(opt => opt.trim()).filter(opt => opt) : undefined,
+                // Asegura que los campos opcionales existan como undefined si no están
+                required: q.required ?? false,
+                placeholder: q.placeholder ?? undefined
+            })),
         };
         forms.value.push(newForm);
         console.log("Form added:", newForm);
-        return newForm.id; // Return the new form's ID
+        return newForm.id;
     }
 
     function addFormResponse(formId: string, answers: FormAnswers) {
-         const form = forms.value.find(f => f.id === formId);
-         if (!form) {
-             console.error("Form not found for response:", formId);
-             return;
-         }
-         // Basic validation (can be expanded)
-         if (Object.keys(answers).length !== form.questions.length) {
-             // This is a simple check, more robust validation needed for required fields etc.
-             console.warn("Number of answers doesn't match number of questions.");
-         }
+        const form = forms.value.find(f => f.id === formId);
+        if (!form) {
+            console.error("Form not found when adding response:", formId);
+            alert("Error: Could not submit response. Form not found.");
+            return;
+        }
+
+        // Validación básica de respuesta (ej: campos requeridos)
+        for (const question of form.questions) {
+            if (question.required) {
+                 const answer = answers[question.id];
+                 // Verifica si es nulo, indefinido o una cadena vacía (después de quitar espacios)
+                 const isEmpty = answer === null || answer === undefined || (typeof answer === 'string' && answer.trim() === '');
+                if (isEmpty) {
+                    console.error(`Required question "${question.text}" was not answered.`);
+                    alert(`Required question "${question.text}" must be answered.`);
+                    return; // Detiene el envío
+                }
+            }
+        }
 
         const newResponse: FormResponse = {
-            id: generateId(),
+            id: generateResponseId(),
             formId: formId,
-            submittedAt: new Date(),
-            answers: answers,
+            submittedAt: new Date(), // Hora actual del envío
+            answers: answers, // Guarda las respuestas recibidas
         };
         formResponses.value.push(newResponse);
         console.log("Form response added:", newResponse);
     }
 
-     // Example Form for Testing
-    addForm("User Feedback Survey", [
-        { id: generateId(), type: 'short-answer', text: 'What is your name?', required: true, placeholder: 'John Doe' },
-        { id: generateId(), type: 'long-answer', text: 'Share your feedback about our service:', required: true },
-        { id: generateId(), type: 'number', text: 'Rate our service (1-5)', required: false, placeholder: '3' },
-        { id: generateId(), type: 'radio', text: 'Would you recommend us?', options: ['Yes', 'No', 'Maybe'], required: true },
-    ]);
+    // --- Datos de Ejemplo Iniciales (Opcional) ---
+    const initializeExampleForms = () => {
+        if (forms.value.length === 0) {
+            console.log("Initializing example forms...");
+            addForm("Website Feedback", [
+                { id: generateQuestionId(), type: 'short-answer', text: 'Your Name (Optional)', required: false, placeholder: 'John Doe' },
+                { id: generateQuestionId(), type: 'number', text: 'Rate usability (1-5)', required: true, placeholder: '5' },
+                { id: generateQuestionId(), type: 'radio', text: 'Did you find what you needed?', options: ['Yes, easily', 'Yes, after searching', 'No'], required: true },
+                { id: generateQuestionId(), type: 'long-answer', text: 'Any suggestions for improvement?', required: false, placeholder: 'More examples, clearer navigation...' },
+            ]);
+            addForm("Event Registration", [
+                 { id: generateQuestionId(), type: 'short-answer', text: 'Full Name', required: true, placeholder: 'Jane Smith'},
+                 { id: generateQuestionId(), type: 'short-answer', text: 'Email Address', required: true, placeholder: 'jane.smith@example.com'}, // Podría ser 'email' type en BaseInput
+                 { id: generateQuestionId(), type: 'radio', text: 'Dietary Restrictions?', options: ['None', 'Vegetarian', 'Gluten-Free', 'Other'], required: false }
+            ]);
+        }
+    };
+    initializeExampleForms();
 
 
     return {
@@ -73,4 +131,6 @@ export const useFormStore = defineStore('form', () => {
         addForm,
         addFormResponse,
     };
-});
+},
+// { persist: true } // Descomenta si usas persistencia
+);
