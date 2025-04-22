@@ -1,30 +1,56 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <div id="app" class="min-h-screen">
+     <nav class="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <RouterLink :to="{ name: 'home' }" class="text-2xl font-bold hover:text-indigo-200 transition-colors">
+                Vue Polls & Forms
+            </RouterLink>
+             <div class="space-x-4">
+                 <RouterLink :to="{ name: 'home' }" class="hover:text-indigo-200 transition-colors">Home</RouterLink>
+                 <RouterLink :to="{ name: 'poll-create' }" class="hover:text-indigo-200 transition-colors">Create Poll</RouterLink>
+                 <RouterLink :to="{ name: 'form-create' }" class="hover:text-indigo-200 transition-colors">Create Form</RouterLink>
+             </div>
+        </div>
+     </nav>
+
+    <main class="container mx-auto p-6">
+      <RouterView v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </RouterView>
+    </main>
+
+    <footer class="text-center text-gray-500 text-sm py-6 mt-10 border-t border-gray-200">
+        Frontend Challenge - Poll & Form Builder (No Backend) - {{ new Date().getFullYear() }}
+    </footer>
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<script setup lang="ts">
+import { RouterLink, RouterView } from 'vue-router';
+</script>
+
+<style>
+/* Estilos para transiciones de página (opcional) */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+/* Ajustes generales si son necesarios */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1;
 }
 </style>
