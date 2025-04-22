@@ -4,10 +4,24 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
   ],
+  "target": "ESNext",
+  "useDefineForClassFields": true,
+  "module": "ESNext",
+  "moduleResolution": "Node",
+  "strict": true, // El modo estricto ayuda a encontrar errores
+  "jsx": "preserve",
+  "sourceMap": true,
+  "resolveJsonModule": true,
+  "isolatedModules": true,
+  "esModuleInterop": true,
+  "lib": ["ESNext", "DOM"],
+  "skipLibCheck": true,
+  "noEmit": true, 
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     }
-  }
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"], 
 }
